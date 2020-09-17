@@ -6,6 +6,8 @@ PRN = 0b01000111
 ADD = 0b10100000
 SUB = 0b10100001
 MUL = 0b10100010
+PUSH = 0b01000101
+POP = 0b01000110
 
 import sys
 
@@ -17,6 +19,7 @@ class CPU:
         # memory 
         self.ram = [0] * 256
         # instruction register
+
         self.registers = [0] * 8
 
         # program counter
@@ -31,6 +34,12 @@ class CPU:
         self.branch_table[ADD] = self.ADD
         self.branch_table[SUB] = self.SUB
         self.branch_table[MUL] = self.MUL
+        self.branch_table[PUSH] = self.PUSH
+        self.branch_table[POP] = self.POP
+
+        self.stack_pointer = 7
+
+        self.registers[self.stack_pointer] = 0xF4 # initialize stack pointer
 
         
     def ram_read(self, address):
@@ -159,7 +168,23 @@ class CPU:
     #         else:
     #             
 
-    
+    def PUSH(self):
+        self.registers[self.stack_pointer] -= 1
+        reg_num = self.ram[self.pc + 1]
+        value = self.registers[reg_num]
+        top_of_stack_addr = self.registers[self.stack_pointer]
+        self.ram[top_of_stack_addr] = value
+
+        self.pc += 2
+
+    def POP(self):
+        reg_num = self.ram[self.pc + 1]
+        top_of_stack_addr = self.registers[self.stack_pointer]
+        value = self.ram[top_of_stack_addr]
+        self.registers[reg_num] = value
+        self.registers[self.stack_pointer] += 1    
+
+        self.pc += 2
 
     def ADD(self):
         reg_a = self.ram[self.pc + 1]
