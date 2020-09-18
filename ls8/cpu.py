@@ -9,6 +9,20 @@ MUL = 0b10100010
 PUSH = 0b01000101
 POP = 0b01000110
 
+CMP = 0b10100111
+JMP = 0b01010100
+JEQ = 0b01010101
+JNE = 0b01010110
+
+AND = 0b10101000
+OR = 0b10101010
+XOR = 0b10101011
+NOT = 0b01101001
+SHL = 0b10101100
+SHR = 0b10101101
+MOD = 0b10100100
+
+
 import sys
 
 class CPU:
@@ -36,10 +50,25 @@ class CPU:
         self.branch_table[MUL] = self.MUL
         self.branch_table[PUSH] = self.PUSH
         self.branch_table[POP] = self.POP
+        
+        self.branch_table[CMP] = self.CMP
+        self.branch_table[JMP] = self.JMP
+        self.branch_table[JNE] = self.JNE
+        self.branch_table[JEQ] = self.JEQ
+
+        self.branch_table[AND] = self.AND
+        self.branch_table[OR] = self.OR
+        self.branch_table[XOR] = self.XOR
+        self.branch_table[NOT] = self.NOT
+        self.branch_table[SHL] = self.SHL
+        self.branch_table[SHR] = self.SHR
+        self.branch_table[MOD] = self.MOD
 
         self.stack_pointer = 7
 
         self.registers[self.stack_pointer] = 0xF4 # initialize stack pointer
+
+        self.fl = 0
 
         
     def ram_read(self, address):
@@ -117,6 +146,35 @@ class CPU:
         elif op == "MUL":
             self.registers[reg_a] *= self.registers[reg_b]
 
+        elif op == "CMP":
+            if self.registers[reg_a] == self.registers[reg_b]:
+                self.fl = 0b00000001
+            if self.registers[reg_a] > self.registers[reg_b]:
+                self.fl = 0b00000010
+            if self.registers[reg_a] < self.registers[reg_b]:
+                self.fl = 0b00000100
+        
+        elif op == "AND":
+            self.registers[reg_a] &= self.registers[reg_b]
+
+        elif op == "OR":
+            self.registers[reg_a] |= self.registers[reg_b]
+
+        elif op == "XOR":
+            self.registers[reg_a] ^= self.registers[reg_b]
+
+        elif op == "NOT":
+            self.registers[reg_a] = ~self.registers[reg_b]
+
+        elif op == "SHL":
+            self.registers[reg_a] <<= self.registers[reg_b]
+
+        elif op == "SHR":
+            self.registers[reg_a] >>= self.registers[reg_b]
+
+        elif op == "MOD":
+            self.registers[reg_a] %= self.registers[reg_b]
+
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -166,7 +224,93 @@ class CPU:
     #             self.alu("MUL", operand_a, operand_b)
 
     #         else:
-    #             
+
+    # def helper_function(self, operation_string):
+    #     reg_a = self.ram[self.pc + 1]
+    #     reg_b = self.ram[self.pc + 2]
+        
+    #     self.alu(operation_string, reg_a, reg_b)
+
+    #     self.pc += 3
+
+    def MOD(self):
+        reg_a = self.ram[self.pc + 1]
+        reg_b = self.ram[self.pc + 2]
+
+        self.alu("MOD", reg_a, reg_b)
+
+        self.pc += 3
+
+    def SHR(self):
+        reg_a = self.ram[self.pc + 1]
+        reg_b = self.ram[self.pc + 2]
+
+        self.alu("SHR", reg_a, reg_b)
+
+        self.pc += 3
+
+    def SHL(self):
+        reg_a = self.ram[self.pc + 1]
+        reg_b = self.ram[self.pc + 2]
+
+        self.alu("SHL", reg_a, reg_b)
+
+        self.pc += 3
+
+    def NOT(self):
+        reg_a = self.ram[self.pc + 1]
+        reg_b = self.ram[self.pc + 2]
+
+        self.alu("NOT", reg_a, reg_b)
+
+        self.pc += 3
+
+    def XOR(self):
+        reg_a = self.ram[self.pc + 1]
+        reg_b = self.ram[self.pc + 2]
+
+        self.alu("XOR", reg_a, reg_b)
+
+        self.pc += 3
+
+    def OR(self):
+        reg_a = self.ram[self.pc + 1]
+        reg_b = self.ram[self.pc + 2]
+
+        self.alu("OR", reg_a, reg_b)
+
+        self.pc += 3
+
+    def AND(self):
+        reg_a = self.ram[self.pc + 1]
+        reg_b = self.ram[self.pc + 2]
+
+        self.alu("AND", reg_a, reg_b)
+
+        self.pc += 3
+
+    def JEQ(self):
+        if self.fl == 0b00000001:
+            self.pc = self.registers[self.ram_read(self.pc + 1)]
+        else:
+            self.pc += 2
+
+    def JNE(self):
+        if self.fl != 0b00000001:
+            self.pc = self.registers[self.ram_read(self.pc + 1)]
+        else:
+            self.pc += 2
+
+    def JMP(self):
+        self.pc = self.registers[self.ram_read(self.pc + 1)]
+
+    def CMP(self):
+        reg_a = self.ram[self.pc + 1]
+        reg_b = self.ram[self.pc + 2]
+
+        self.alu("CMP", reg_a, reg_b)
+
+        self.pc += 3    
 
     def PUSH(self):
         self.registers[self.stack_pointer] -= 1
@@ -198,9 +342,9 @@ class CPU:
         reg_a = self.ram[self.pc + 1]
         reg_b = self.ram[self.pc + 2]
 
-        self.pc += 3
-
         self.alu("SUB", reg_a, reg_b)
+
+        self.pc += 3
 
     def MUL(self):
         reg_a = self.ram[self.pc + 1]
